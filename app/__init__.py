@@ -19,5 +19,6 @@ def create_app():
         auth_bp,
         url_prefix="/api/auth"
     )
+    from app.models import User
 
     return app
