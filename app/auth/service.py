@@ -1,10 +1,88 @@
 import bcrypt
 
 from flask_jwt_extended import create_access_token
+from itsdangerous import URLSafeTimedSerializer
 
-from app.extensions import db
-from app.models import User
+from app.extensions import db,mail
+from flask import current_app
+from flask_mail import Message
+from bcrypt import hashpw, gensalt
+from app.models.user import User
+from app.auth.token import generate_reset_token
 
+
+def generate_reset_token(email):
+    serializer = URLSafeTimedSerializer(
+        current_app.config["JWT_SECRET_KEY"]
+    )
+
+    return serializer.dumps(email, salt="password-reset")
+
+def verify_reset_token(token, max_age=3600):
+    serializer = URLSafeTimedSerializer(
+        current_app.config["JWT_SECRET_KEY"]
+    )
+
+    try:
+        email = serializer.loads(
+            token,
+            salt="password-reset",
+            max_age=max_age
+        )
+
+        return email
+
+    except Exception:
+        return None
+
+def reset_password(data):
+
+    token = data.get("token")
+    new_password = data.get("password")
+
+    if not token:
+        return {
+            "message": "Reset token is required."
+        }, 400
+
+    if not new_password:
+        return {
+            "message": "New password is required."
+        }, 400
+
+    if len(new_password) < 8:
+        return {
+            "message": "Password must be at least 8 characters."
+        }, 400
+
+    email = verify_reset_token(token)
+
+    if not email:
+        return {
+            "message": "Invalid or expired reset link."
+        }, 400
+
+    user = User.query.filter_by(
+        email=email
+    ).first()
+
+    if not user:
+        return {
+            "message": "User not found."
+        }, 404
+
+    hashed_password = hashpw(
+        new_password.encode("utf-8"),
+        gensalt()
+    ).decode("utf-8")
+
+    user.password = hashed_password
+
+    db.session.commit()
+
+    return {
+        "message": "Password has been reset successfully."
+    }, 200
 
 def register_user(data):
 
@@ -75,15 +153,43 @@ def forgot_password(data):
         email=data["email"]
     ).first()
 
-    if user:
-
+    if not user:
         return {
-            "message": "Password reset link sent."
-        }, 200
+            "message": "Email not found"
+        }, 404
+
+    token = generate_reset_token(user.email)
+
+    reset_link = (
+        f"http://localhost:3000/reset-password/{token}"
+    )
+
+    msg = Message(
+        subject="Reset Your Password",
+        recipients=[user.email],
+        body=f"""
+Hello {user.name},
+
+We received a request to reset your password.
+
+Click the link below to reset your password:
+
+{reset_link}
+
+This link will expire in 1 hour.
+
+If you did not request a password reset, please ignore this email.
+
+Regards,
+AutomationProject
+"""
+    )
+
+    mail.send(msg)
 
     return {
-        "message": "Email not found"
-    }, 404
+        "message": "Password reset link sent."
+    }, 200
 
 
 def update_user_profile(current_email, data):

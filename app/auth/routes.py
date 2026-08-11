@@ -4,6 +4,7 @@ from app.auth.service import (
     register_user,
     login_user,
     forgot_password,
+    reset_password,
     update_user_profile,
     change_password
 )
@@ -72,5 +73,12 @@ def forgot():
 
     return forgot_password(data)
 
+
+@auth_bp.route("/reset-password", methods=["POST"])
+def reset():
+
+    data = request.get_json()
+
+    return reset_password(data)
 
     
