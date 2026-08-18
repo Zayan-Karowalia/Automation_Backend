@@ -1,5 +1,10 @@
 from flask import Blueprint, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
+    get_jwt_identity
+)
 from app.auth.service import (
     register_user,
     login_user,
@@ -65,6 +70,19 @@ def login():
 
     return login_user(data)
 
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+
+    current_email = get_jwt_identity()
+
+    new_access_token = create_access_token(
+        identity=current_email
+    )
+
+    return {
+        "access_token": new_access_token
+    }, 200
 
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot():

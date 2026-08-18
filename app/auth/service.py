@@ -1,8 +1,10 @@
 import bcrypt
 
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token
+)
 from itsdangerous import URLSafeTimedSerializer
-
 from app.extensions import db,mail
 from flask import current_app
 from flask_mail import Message
@@ -134,12 +136,17 @@ def login_user(data):
         user.password.encode()
     ):
 
-        token = create_access_token(
+        access_token = create_access_token(
+            identity=user.email
+        )
+
+        refresh_token = create_refresh_token(
             identity=user.email
         )
 
         return {
-            "access_token": token
+            "access_token": access_token,
+            "refresh_token": refresh_token
         }, 200
 
     return {
