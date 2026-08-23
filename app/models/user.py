@@ -40,3 +40,10 @@ class User(db.Model):
         onupdate=datetime.utcnow,
         nullable=False
     )
+
+    subscriptions = db.relationship(
+        "Subscription",
+        backref="user",
+        lazy=True,
+        cascade="all, delete-orphan"
+    )

@@ -21,6 +21,22 @@ class Config:
     )
 
 
+    STRIPE_SECRET_KEY = os.getenv(
+        "STRIPE_SECRET_KEY"
+    )
+
+    STRIPE_WEBHOOK_SECRET = os.getenv(
+        "STRIPE_WEBHOOK_SECRET"
+    )
+
+    STRIPE_SUCCESS_URL = os.getenv(
+        "STRIPE_SUCCESS_URL"
+    )
+
+    STRIPE_CANCEL_URL = os.getenv(
+        "STRIPE_CANCEL_URL"
+    )
+
     # MailHog / Flask-Mail
     MAIL_SERVER = os.getenv("MAIL_SERVER", "localhost")
     MAIL_PORT = int(os.getenv("MAIL_PORT", "1025"))
